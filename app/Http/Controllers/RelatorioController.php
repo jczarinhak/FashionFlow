@@ -17,36 +17,45 @@ class RelatorioController extends Controller
      * Página principal dos relatórios
      * Mostra lucro total do mês, salário das vendedoras e total de devoluções.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $inicioMes = Carbon::now()->startOfMonth();
-        $fimMes = Carbon::now()->endOfMonth();
-    
-        // Lucro total do mês (soma dos valores de venda menos custo)
-        $lucroTotal = Venda::whereBetween('created_at', [$inicioMes, $fimMes])
-            ->get()
-            ->reduce(function ($carry, $venda) {
-                return $carry + ($venda->valor_total - $venda->custo_total);
-            }, 0);
-    
-        // Total de comissão das vendedoras no mês
-        $comissaoTotal = Venda::whereBetween('created_at', [$inicioMes, $fimMes])
-            ->with('vendedora') // Certifique-se que o relacionamento está definido em Venda model
-            ->get()
-            ->reduce(function ($carry, $venda) {
-                return $carry + ($venda->valor_total * ($venda->vendedora->comissao ?? 0));
-            }, 0);
-    
-        // Total de devoluções no mês
+        // Filtro por mês (formato: YYYY-MM). Se não houver, usa o mês atual.
+        $mesSelecionado = $request->input('mes'); // Ex: "2025-06"
+        $data = $mesSelecionado ? Carbon::createFromFormat('Y-m', $mesSelecionado) : Carbon::now();
+
+        $inicioMes = $data->copy()->startOfMonth();
+        $fimMes = $data->copy()->endOfMonth();
+
+        // Vendas do mês com vendedoras
+        $vendas = Venda::whereBetween('created_at', [$inicioMes, $fimMes])
+            ->with('vendedora')
+            ->get();
+
+        // Lucro bruto: total das vendas - custos
+        $lucroBruto = $vendas->reduce(function ($carry, $venda) {
+            return $carry + ($venda->valor_total - $venda->custo_total);
+        }, 0);
+
+        // Comissões das vendedoras
+        $comissaoTotal = $vendas->reduce(function ($carry, $venda) {
+            return $carry + ($venda->valor_total * ($venda->vendedora->comissao ?? 0));
+        }, 0);
+
+        // Total devolvido no mês
         $totalDevolucoes = Devolucao::whereBetween('created_at', [$inicioMes, $fimMes])
             ->sum('valor_estornado');
-    
+
+        // Lucro final = lucro bruto - devoluções - comissões
+        $lucroFinal = $lucroBruto - $totalDevolucoes - $comissaoTotal;
+
         return view('relatorios.index', [
-            'lucroTotal' => $lucroTotal,
-            'salarios' => $comissaoTotal,  // Renomeei a variável para comissaoTotal, mas pode usar 'salarios' na view se quiser
-            'totalDevolucoes' => $totalDevolucoes
+            'lucroTotal' => $lucroFinal,
+            'salarios' => $comissaoTotal,
+            'totalDevolucoes' => $totalDevolucoes,
+            'mesSelecionado' => $data->format('Y-m')
         ]);
     }
+
     /**
      * Monta a query base para busca de devoluções com filtros opcionais.
      */
@@ -106,7 +115,6 @@ class RelatorioController extends Controller
 
     /**
      * Gráfico de vendas vs devoluções dos últimos 6 meses.
-     * Aqui usei dados fictícios (rand), substitua com dados reais se quiser.
      */
     public function vendasVsDevolucoes()
     {
@@ -120,14 +128,15 @@ class RelatorioController extends Controller
 
             $labels[] = $mesAno;
 
-            // Exemplo: Somar o valor_total das vendas no mês
             $inicioMes = $data->copy()->startOfMonth();
             $fimMes = $data->copy()->endOfMonth();
-            $vendasMes = Venda::whereBetween('created_at', [$inicioMes, $fimMes])->sum('valor_total');
+
+            $vendasMes = Venda::whereBetween('created_at', [$inicioMes, $fimMes])
+                ->sum('valor_total');
             $vendas[] = $vendasMes;
 
-            // Somar valor_estornado das devoluções no mês
-            $devolucoesMes = Devolucao::whereBetween('created_at', [$inicioMes, $fimMes])->sum('valor_estornado');
+            $devolucoesMes = Devolucao::whereBetween('created_at', [$inicioMes, $fimMes])
+                ->sum('valor_estornado');
             $devolucoes[] = $devolucoesMes;
         }
 

@@ -11,18 +11,27 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Mail\DevolucaoProcessadaMail;
 use Illuminate\Support\Facades\Mail;
-use App\Events\DevolucaoConfirmadaEvent;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class DevolucaoController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $devolucoes = Devolucao::with('venda.cliente')->latest()->paginate(10);
-        // Pega o total estornado considerando todas as devoluções (não só da página atual)
-        $totalEstornado = Devolucao::sum('valor_estornado');
+        $mesSelecionado = $request->input('mes'); // formato esperado: YYYY-MM
 
-        return view('devolucoes.index', compact('devolucoes', 'totalEstornado'));
+        $query = Devolucao::with('venda.cliente')->latest();
+
+        if ($mesSelecionado) {
+            $query->whereYear('data_devolucao', substr($mesSelecionado, 0, 4))
+                  ->whereMonth('data_devolucao', substr($mesSelecionado, 5, 2));
+        }
+
+        $devolucoes = $query->paginate(10)->withQueryString();
+
+        // Total estornado no período filtrado (ou total geral se não filtrado)
+        $totalEstornado = $query->sum('valor_estornado');
+
+        return view('devolucoes.index', compact('devolucoes', 'totalEstornado', 'mesSelecionado'));
     }
 
     public function create(Venda $venda)
@@ -174,5 +183,23 @@ class DevolucaoController extends Controller
         $pdf = Pdf::loadView('relatorios.devolucoes', compact('devolucoes'));
 
         return $pdf->download('relatorio_devolucoes.pdf');
+    }
+
+    public function gerarRelatorioPorMes(Request $request)
+    {
+        $mesSelecionado = $request->input('mes');
+
+        $query = Devolucao::with(['venda.cliente', 'venda.produtos']);
+
+        if ($mesSelecionado) {
+            $query->whereYear('data_devolucao', substr($mesSelecionado, 0, 4))
+                  ->whereMonth('data_devolucao', substr($mesSelecionado, 5, 2));
+        }
+
+        $devolucoes = $query->get();
+
+        $pdf = Pdf::loadView('relatorios.devolucoes', compact('devolucoes', 'mesSelecionado'));
+
+        return $pdf->download("relatorio_devolucoes_{$mesSelecionado}.pdf");
     }
 }

@@ -8,11 +8,40 @@
         Todas as Devoluções
     </h1>
 
+    {{-- Formulário de filtro por mês --}}
+    <form method="GET" action="{{ route('devolucoes.index') }}" class="mb-6 flex flex-wrap items-center gap-4 bg-gray-50 p-4 rounded shadow-sm max-w-md">
+        <label for="mes" class="block text-gray-700 font-semibold min-w-max">
+            Filtrar por mês:
+        </label>
+        <input
+            type="month"
+            id="mes"
+            name="mes"
+            value="{{ $mesSelecionado ?? '' }}"
+            placeholder="Selecione o mês"
+            class="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition w-40"
+        />
+        <button
+            type="submit"
+            class="bg-white text-black font-semibold px-5 py-2 rounded-md border border-black shadow hover:bg-gray-100 transition"
+        >
+            Filtrar
+        </button>
+
+        @if(!empty($mesSelecionado))
+            <a href="{{ route('relatorios.devolucoes', ['mes' => $mesSelecionado]) }}" target="_blank"
+               class="bg-white text-black font-semibold px-5 py-2 rounded-md border border-black shadow hover:bg-gray-100 transition"
+            >
+                Gerar Relatório PDF
+            </a>
+        @endif
+    </form>
+
     <div class="overflow-x-auto border border-gray-300 rounded-lg shadow-sm">
         <table class="min-w-full bg-white divide-y divide-gray-200 text-sm">
 
             <thead class="sr-only">
-                {{-- Cabeçalho oculto, pois mostraremos título em cada célula --}}
+                {{-- Cabeçalho oculto, pois mostramos título em cada célula --}}
                 <tr>
                     <th>Venda ID</th>
                     <th>Cliente</th>

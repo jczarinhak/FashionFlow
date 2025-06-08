@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('cliente_id')->constrained('clientes')->onDelete('cascade');
             $table->date('data_venda');
             $table->decimal('valor_total', 10, 2);
+            $table->decimal('custo_total', 10, 2)->default(0); // ✅ novo campo
             $table->timestamps();
             $table->softDeletes();
         });
