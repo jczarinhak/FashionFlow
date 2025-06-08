@@ -9,7 +9,8 @@ use App\Http\Controllers\VendaController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ChartController;
-
+use App\Http\Controllers\NotaFiscalController;
+// =================== ROTAS PRINCIPAIS ===================
 // Rota da Home
 Route::get('/', function () {
     return view('home');
@@ -115,3 +116,7 @@ Route::post('/login', [LoginController::class, 'login']);
 
 // =================== Chart ===================
 Route::get('/charts', [ChartController::class, 'index'])->name('charts.index');
+
+// =================== routes/web.php ===================
+Route::post('/vendas/{venda}/emitir-nota', [NotaFiscalController::class, 'emitir'])
+     ->name('vendas.emitir-nota');

@@ -37,10 +37,10 @@
     <div class="mt-4">
         <h3 class="font-bold text-lg">Ações:</h3>
         <a 
-    href="{{ route('devolucoes.create', $venda) }}" 
+            href="{{ route('devolucoes.create', $venda) }}" 
             class="btn bg-white text-black border border-black px-4 py-2 rounded inline-flex items-center hover:bg-gray-100"
         >
-          <i class="fas fa-undo mr-2"></i> Iniciar Devolução
+            <i class="fas fa-undo mr-2"></i> Iniciar Devolução
         </a>
     </div>
 
@@ -65,10 +65,10 @@
                         <td>{{ $devolucao->motivo }}</td>
                         <td>R$ {{ number_format($devolucao->valor_estornado, 2, ',', '.') }}</td>
                         <td>
-                        <a href="{{ route('devolucoes.comprovante', $devolucao->id) }}" 
-                         class="border border-gray-400 px-3 py-1 rounded inline-flex items-center hover:bg-gray-100 transition">
-                       <i class="fas fa-file-pdf mr-1"></i> Baixar Comprovante
-                        </a>
+                            <a href="{{ route('devolucoes.comprovante', $devolucao->id) }}" 
+                               class="border border-gray-400 px-3 py-1 rounded inline-flex items-center hover:bg-gray-100 transition">
+                               <i class="fas fa-file-pdf mr-1"></i> Baixar Comprovante
+                            </a>
                         </td>
                     </tr>
                     @endforeach
@@ -78,6 +78,16 @@
     @else
         <p class="mt-4 text-gray-600">Nenhuma devolução registrada.</p>
     @endif
+
+    {{-- Formulário para emitir nota fiscal --}}
+    <div class="mt-6">
+        <form action="{{ route('vendas.emitir-nota', $venda->id) }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-file-alt"></i> Emitir Nota Fiscal
+            </button>
+        </form>
+    </div>
 
     <a href="{{ route('vendas.index') }}" class="btn btn-primary mt-6">Voltar</a>
 </div>
